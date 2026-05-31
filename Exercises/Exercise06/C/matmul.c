@@ -93,7 +93,8 @@ int main(int argc, char *argv[])
     checkError(err, "Creating context");
 
    // Create a command queue
-    commands = clCreateCommandQueue(context, device, 0, &err);
+    commands = clCreateCommandQueueWithProperties(
+        context, device, NULL, &err);
     checkError(err, "Creating command queue");
 
 //--------------------------------------------------------------------------------
@@ -134,13 +135,34 @@ int main(int argc, char *argv[])
                             sizeof(float) * size, NULL, &err);
     checkError(err, "Creating buffer d_c");
 
-
 //--------------------------------------------------------------------------------
 // OpenCL matrix multiplication ... Naive
 //--------------------------------------------------------------------------------
 
+    // Load my kernel
+    char mykernelsrc[2048];
+    char *mykernelsrcptr[1];
+    mykernelsrcptr[0] = &mykernelsrc[0];
+    {
+        FILE *mykernelsrcfile = fopen("./matmul.cl","rb");
+        if(mykernelsrcfile==NULL){
+            printf("Faield to open kernel source file!!!");
+            return 1;
+        }
+        size_t read_status = fread(
+            &mykernelsrc, sizeof(char), 2048, mykernelsrcfile);
+        if(read_status==0){ 
+            printf("Failed to load kernel source!!!");
+            return 1;
+        }
+        fclose(mykernelsrcfile);
+    }
+
+
     // Create the comput program from the source buffer
-    program = clCreateProgramWithSource(context, 1, (const char **) & kernelsource, NULL, &err);
+    program = clCreateProgramWithSource(
+        context, 
+        1,(const char**)(mykernelsrcptr), NULL, &err);
     checkError(err, "Creating program");
 
    // Build the program
@@ -167,10 +189,10 @@ int main(int argc, char *argv[])
     {
         zero_mat(N, h_C);
 
-        err =  clSetKernelArg(kernel, 0, sizeof(int),    &N);
-        err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_a);
-        err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &d_b);
-        err |= clSetKernelArg(kernel, 3, sizeof(cl_mem), &d_c);
+        err =  clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_a);
+        err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_b);
+        err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &d_c);
+        err |= clSetKernelArg(kernel, 3, sizeof(int)   , &N  );
         checkError(err, "Setting kernel arguments");
 
         start_time = wtime();
@@ -179,12 +201,11 @@ int main(int argc, char *argv[])
         // a dot product for each element of the product matrix.  The local work
         // group size is set to NULL ... so I'm telling the OpenCL runtime to
         // figure out a local work group size for me.
+        // Joey: Is this a brute force matmul??? OMG QwQ
         const size_t global[2] = {N, N};
         err = clEnqueueNDRangeKernel(
-            commands,
-            kernel,
-            2, NULL,
-            global, NULL,
+            commands, kernel,
+            2, NULL, global, NULL,
             0, NULL, NULL);
 
         checkError(err, "Enqueuing kernel");

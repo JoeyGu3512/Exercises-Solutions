@@ -15,6 +15,10 @@ COMMON_DIR = ../../C_common
 ifndef DEVICE
 	DEVICE = CL_DEVICE_TYPE_DEFAULT
 endif
+# CL version
+ifndef CL_VER
+	CL_VER = 300
+endif
 
 # Check our platform and make sure we define the APPLE variable
 # and set up the right compiler flags and libraries
@@ -23,7 +27,7 @@ ifeq ($(PLATFORM), Darwin)
 	LIBS = -framework OpenCL
 endif
 
-CCFLAGS += -D DEVICE=$(DEVICE)
+CCFLAGS += -D DEVICE=$(DEVICE) -D CL_TARGET_OPENCL_VERSION=$(CL_VER)
 
 vadd: vadd_c.c $(COMMON_DIR)/wtime.c $(COMMON_DIR)/device_info.c
 	$(CC) $^ $(CCFLAGS) $(LIBS) -I $(COMMON_DIR) -o $@

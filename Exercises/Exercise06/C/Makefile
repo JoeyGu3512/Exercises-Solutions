@@ -11,7 +11,16 @@ ifndef CC
 	CC = gcc
 endif
 
-CCFLAGS=-O3 -std=c99 -ffast-math
+ifndef DEVICE
+	DEVICE = CL_DEVICE_TYPE_DEFAULT
+endif
+
+# CL version
+ifndef CL_VER
+	CL_VER = 300
+endif
+
+CCFLAGS= -g -O3 -std=c99 -D CL_TARGET_OPENCL_VERSION=$(CL_VER) -D DEVICE=$(DEVICE) # -ffast-math
 
 LIBS = -lm -lOpenCL -fopenmp
 

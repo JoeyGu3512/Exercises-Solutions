@@ -4,8 +4,8 @@
 - [x] Exercise 2 - Running the Vadd kernel
 - [x] Exercise 3 - Running the Vadd kernel (C++/Python)
 - [x] Exercise 4 - Chaining vector add kernels (C++/Python)
-- [ ] Exercise 5 - The D = A + B + C problem
-- [ ] Exercise 6 - Matrix Multiplication
+- [x] Exercise 5 - The D = A + B + C problem
+- [x] Exercise 6 - Matrix Multiplication
 - [ ] Exercise 7 - using private memory
 - [ ] Exercise 8 - using local memory
 - [ ] Exercise 9 - The Pi program
