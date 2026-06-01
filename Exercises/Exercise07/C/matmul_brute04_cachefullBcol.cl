@@ -14,7 +14,8 @@ void mmul(
     int num_i = (N+lsz_i-1)/lsz_i;
 
     // A row sectional cahce
-    __local float B_col_cache[2048];
+    // OMG..
+    __local float B_col_cache[2048+256];
 
     // thread accumulate reg
     __private float dot_prod = 0.0;

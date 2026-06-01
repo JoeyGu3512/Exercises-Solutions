@@ -27,6 +27,11 @@
 #include "device_picker.h"
 
 #define NUM_VER 4
+#define GLOBAL_ROUND_UP(ng,nl) ((((ng)+(nl)-1)/(nl))*nl)
+
+#define KERNEL1_LOCAL_WG 32
+#define KERNEL2_LOCAL_WG 32
+#define KERNEL3_LOCAL_WG 32
 
 const char *joey_kernel_src_arr[NUM_VER] = {
     "./matmul_brute01_naive.cl",
@@ -37,24 +42,24 @@ const char *joey_kernel_src_arr[NUM_VER] = {
 
 const size_t kernels_local_ndrange[NUM_VER][2] = {
     {1,1},
-    {64,1},
-    {64,1},
-    {64,1}
+    {KERNEL1_LOCAL_WG,1},
+    {KERNEL2_LOCAL_WG,1},
+    {KERNEL3_LOCAL_WG,1}
 };
 
 const size_t kernels_global_ndrange[NUM_VER][2] = {
     {ORDER,ORDER},
     {
-        ((ORDER+64-1)/64)*64,
+        GLOBAL_ROUND_UP(ORDER,KERNEL1_LOCAL_WG),
         1
     },
     {
-        ((ORDER+64-1)/64)*64,
-        ((ORDER+64-1)/64)*64
+        GLOBAL_ROUND_UP(ORDER,KERNEL2_LOCAL_WG),
+        GLOBAL_ROUND_UP(ORDER,KERNEL2_LOCAL_WG)
     },
     {
-        ((ORDER+64-1)/64)*64,
-        ((ORDER+64-1)/64)*64
+        GLOBAL_ROUND_UP(ORDER,KERNEL3_LOCAL_WG),
+        GLOBAL_ROUND_UP(ORDER,KERNEL3_LOCAL_WG)
     }
 };
 

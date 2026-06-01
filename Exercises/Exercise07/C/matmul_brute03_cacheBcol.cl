@@ -1,4 +1,4 @@
-__kernel __attribute__((reqd_work_group_size(64,1,1)))
+__kernel __attribute__((reqd_work_group_size(32,1,1)))
 void mmul(
    __global float* A,
    __global float* B,
@@ -14,7 +14,7 @@ void mmul(
     int num_i = (N+lsz_i-1)/lsz_i;
 
     // A row sectional cahce
-    __local float B_col_cache[64];
+    __local float B_col_cache[32];
 
     // thread accumulate reg
     __private float dot_prod = 0.0;
