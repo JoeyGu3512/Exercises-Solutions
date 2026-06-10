@@ -6,8 +6,8 @@
 - [x] Exercise 4 - Chaining vector add kernels (C++/Python)
 - [x] Exercise 5 - The D = A + B + C problem
 - [x] Exercise 6 - Matrix Multiplication
-- [ ] Exercise 7 - using private memory
-- [ ] Exercise 8 - using local memory
+- [x] Exercise 7 - using private memory
+- [x] Exercise 8 - using local memory
 - [ ] Exercise 9 - The Pi program
 - [ ] Exercise 10 - Heterogeneous Computing
 - [ ] Exercise 11 - Optimize matrix multiplication

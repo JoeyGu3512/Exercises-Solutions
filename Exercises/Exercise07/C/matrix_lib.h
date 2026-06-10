@@ -25,7 +25,9 @@ void seq_mat_mul_sdot(int N, float *A, float *B, float *C);
 //  Function to initialize the input matrices A and B
 //
 //------------------------------------------------------------------------------
-void initmat(int N, float *A, float *B, float *C);
+void initmat_random(int N, float *A, float *B, float *C);
+void initmat_debugA(int N, float *A, float *B, float *C);
+void initmat_debugB(int N, float *A, float *B, float *C);
 
 //------------------------------------------------------------------------------
 //

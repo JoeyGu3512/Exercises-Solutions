@@ -3,7 +3,18 @@ ifndef CC
 	CC = gcc
 endif
 
-CCFLAGS=-lm -O3
+# device
+ifndef DEVICE
+	DEVICE = CL_DEVICE_TYPE_DEFAULT
+endif
+# CL version
+ifndef CL_VER
+	CL_VER = 300
+endif
+
+CCFLAGS = -lm -O3
+CCFLAGS += -D DEVICE=$(DEVICE)
+CCFLAGS += -D CL_TARGET_OPENCL_VERSION=$(CL_VER)
 
 LIBS = -fopenmp
 

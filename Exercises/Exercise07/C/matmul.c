@@ -26,30 +26,58 @@
 #include "err_code.h"
 #include "device_picker.h"
 
-#define NUM_VER 4
+
+
+#define NUM_VER 8
 #define GLOBAL_ROUND_UP(ng,nl) ((((ng)+(nl)-1)/(nl))*nl)
 
+#define KERNEL0_LOCAL_WG 1
 #define KERNEL1_LOCAL_WG 32
 #define KERNEL2_LOCAL_WG 32
 #define KERNEL3_LOCAL_WG 32
+#define KERNEL4A_LOCAL_WG 8
+#define KERNEL4B_LOCAL_WG 64
+#define KERNEL5A_LOCAL_WG 8
+#define KERNEL5B_LOCAL_WG 32
+
+#define ORDER 32
+#define MATMUL_CL_DEV 1
+#define INITMAT initmat_debugB
+#define PRINT 1
+#define PRINT_ALL 1
+
+#define COUNT_HOST 1
+#define COUNT_DEVICE 1
 
 const char *joey_kernel_src_arr[NUM_VER] = {
-    "./matmul_brute01_naive.cl",
-    "./matmul_brute02_private.cl",
-    "./matmul_brute03_cacheBcol.cl",
-    "./matmul_brute04_cachefullBcol.cl"
+    "./matmul_brute00_naive.cl",
+    "./matmul_brute01_private.cl",
+    "./matmul_brute02_cacheBcol.cl",
+    "./matmul_brute03_cachefullBcol.cl",
+    "./matmul_brute04_2dblocked.cl",
+    "./matmul_brute04_2dblocked.cl",
+    "./matmul_brute05_2dblocked_imprv.cl",
+    "./matmul_brute05_2dblocked_imprv.cl"
 };
 
 const size_t kernels_local_ndrange[NUM_VER][2] = {
-    {1,1},
+    {KERNEL0_LOCAL_WG,KERNEL0_LOCAL_WG},
     {KERNEL1_LOCAL_WG,1},
     {KERNEL2_LOCAL_WG,1},
-    {KERNEL3_LOCAL_WG,1}
+    {KERNEL3_LOCAL_WG,1},
+    {KERNEL4A_LOCAL_WG,KERNEL4A_LOCAL_WG},
+    {KERNEL4B_LOCAL_WG,KERNEL4B_LOCAL_WG},
+    {KERNEL5A_LOCAL_WG,KERNEL5A_LOCAL_WG},
+    {KERNEL5B_LOCAL_WG,KERNEL5B_LOCAL_WG}
 };
 
 const size_t kernels_global_ndrange[NUM_VER][2] = {
-    {ORDER,ORDER},
     {
+        GLOBAL_ROUND_UP(ORDER,KERNEL0_LOCAL_WG),
+        GLOBAL_ROUND_UP(ORDER,KERNEL0_LOCAL_WG)
+    },
+    {
+        // WT? Tutorial!!!!
         GLOBAL_ROUND_UP(ORDER,KERNEL1_LOCAL_WG),
         1
     },
@@ -60,6 +88,22 @@ const size_t kernels_global_ndrange[NUM_VER][2] = {
     {
         GLOBAL_ROUND_UP(ORDER,KERNEL3_LOCAL_WG),
         GLOBAL_ROUND_UP(ORDER,KERNEL3_LOCAL_WG)
+    },
+    {
+        GLOBAL_ROUND_UP(ORDER,KERNEL4A_LOCAL_WG),
+        GLOBAL_ROUND_UP(ORDER,KERNEL4A_LOCAL_WG)
+    },
+    {
+        GLOBAL_ROUND_UP(ORDER,KERNEL4B_LOCAL_WG),
+        GLOBAL_ROUND_UP(ORDER,KERNEL4B_LOCAL_WG)
+    },
+    {
+        GLOBAL_ROUND_UP(ORDER/2,KERNEL5A_LOCAL_WG),
+        GLOBAL_ROUND_UP(ORDER/2,KERNEL5A_LOCAL_WG)
+    },
+    {
+        GLOBAL_ROUND_UP(ORDER/2,KERNEL5B_LOCAL_WG),
+        GLOBAL_ROUND_UP(ORDER/2,KERNEL5B_LOCAL_WG)
     }
 };
 
@@ -121,7 +165,7 @@ int main(int argc, char *argv[]){
 // Create a context, queue and device.
 //--------------------------------------------------------------------------------
 
-    cl_uint deviceIndex = 0;
+    cl_uint deviceIndex = MATMUL_CL_DEV;
     parseArguments(argc, argv, &deviceIndex);
 
     // Get list of devices
@@ -154,10 +198,10 @@ int main(int argc, char *argv[]){
 // Run sequential version on the host
 //--------------------------------------------------------------------------------
 
-    initmat(N, h_A, h_B, h_C);
+    INITMAT(N, h_A, h_B, h_C);
 
     printf("\n===== Sequential, matrix mult (dot prod), order %d on host CPU ======\n",ORDER);
-    for(int i = 0; i < COUNT; i++)
+    for(int i = 0; i < COUNT_HOST; i++)
     {
         zero_mat(N, h_Cref);
         start_time = wtime();
@@ -193,7 +237,7 @@ int main(int argc, char *argv[]){
 //--------------------------------------------------------------------------------
 
     // Load my kernel
-    char mykernelsrc[4096];
+    char mykernelsrc[1024*1024];
     char *mykernelsrcptr[1];
     mykernelsrcptr[0] = &mykernelsrc[0];
     {
@@ -205,7 +249,7 @@ int main(int argc, char *argv[]){
             return 1;
         }
         size_t read_status = fread(
-            &mykernelsrc, sizeof(char), 4096, mykernelsrcfile);
+            &mykernelsrc, sizeof(char), 1024*1024, mykernelsrcfile);
         if(read_status==0){ 
             printf("Failed to load kernel source!!!");
             return 1;
@@ -241,7 +285,7 @@ int main(int argc, char *argv[]){
     printf("\n===== OpenCL, matrix mult, C(i,j) per work item, order %d ======\n",N);
 
     // Do the multiplication COUNT times
-    for (int i = 0; i < COUNT; i++)
+    for (int i = 0; i < COUNT_DEVICE; i++)
     {
         zero_mat(N, h_C);
 
@@ -249,6 +293,74 @@ int main(int argc, char *argv[]){
         err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_b);
         err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &d_c);
         err |= clSetKernelArg(kernel, 3, sizeof(int)   , &N  );
+
+        // local buffers, later use these for 2
+        int local_buf_size;
+        int matmul_stride_width;
+        if(kernel_version==4){
+            local_buf_size = KERNEL4A_LOCAL_WG*KERNEL4A_LOCAL_WG;
+            matmul_stride_width = KERNEL4A_LOCAL_WG;
+            err |= clSetKernelArg(
+                kernel, 4, 
+                local_buf_size*sizeof(cl_mem), NULL
+            );
+            err |= clSetKernelArg(
+                kernel, 5, 
+                local_buf_size*sizeof(cl_mem), NULL
+            );
+            err |= clSetKernelArg(
+                kernel, 6, 
+                sizeof(int), &matmul_stride_width
+            );
+        }
+        if(kernel_version==5){
+            local_buf_size = KERNEL4B_LOCAL_WG*KERNEL4B_LOCAL_WG;
+            matmul_stride_width = KERNEL4B_LOCAL_WG;
+            err |= clSetKernelArg(
+                kernel, 4, 
+                local_buf_size*sizeof(cl_mem), NULL
+            );
+            err |= clSetKernelArg(
+                kernel, 5, 
+                local_buf_size*sizeof(cl_mem), NULL
+            );
+            err |= clSetKernelArg(
+                kernel, 6, 
+                sizeof(int), &matmul_stride_width
+            );
+        }
+        if(kernel_version==6){
+            local_buf_size = 4*KERNEL5A_LOCAL_WG*KERNEL5A_LOCAL_WG;
+            matmul_stride_width = KERNEL5A_LOCAL_WG;
+            err |= clSetKernelArg(
+                kernel, 4, 
+                local_buf_size*sizeof(cl_mem), NULL
+            );
+            err |= clSetKernelArg(
+                kernel, 5, 
+                local_buf_size*sizeof(cl_mem), NULL
+            );
+            err |= clSetKernelArg(
+                kernel, 6, 
+                sizeof(int), &matmul_stride_width
+            );
+        }
+        if(kernel_version==7){
+            local_buf_size = 4*KERNEL5B_LOCAL_WG*KERNEL5B_LOCAL_WG;
+            matmul_stride_width = KERNEL5B_LOCAL_WG;
+            err |= clSetKernelArg(
+                kernel, 4, 
+                local_buf_size*sizeof(cl_mem), NULL
+            );
+            err |= clSetKernelArg(
+                kernel, 5, 
+                local_buf_size*sizeof(cl_mem), NULL
+            );
+            err |= clSetKernelArg(
+                kernel, 6, 
+                sizeof(int), &matmul_stride_width
+            );
+        }
         checkError(err, "Setting kernel arguments");
 
         start_time = wtime();
@@ -257,13 +369,6 @@ int main(int argc, char *argv[]){
         // a dot product for each element of the product matrix.  The local work
         // group size is set to NULL ... so I'm telling the OpenCL runtime to
         // figure out a local work group size for me.
-        size_t local[2];
-        local[0] = kernels_local_ndrange[kernel_version][0];
-        local[1] = kernels_local_ndrange[kernel_version][1];
-        size_t global[2] = {
-            ((N+local[0]-1)/local[0])*local[0],
-            ((N+local[1]-1)/local[1])*local[1]
-        };
         err = clEnqueueNDRangeKernel(
             commands, kernel,
             2, NULL, 
@@ -298,13 +403,14 @@ int main(int argc, char *argv[]){
     {
         tmp = h_Cref[i];
         tmp -= h_C[i];
+
         if(tmp*tmp < TOL*TOL)
             correct++;
-        else {
+
+        if((PRINT) && tmp*tmp >= TOL*TOL || (PRINT_ALL))
             printf(
                 " h_C %f h_Cref %f \n",
                 h_C[i], h_Cref[i]);
-        }
     }
 
     // summarise results

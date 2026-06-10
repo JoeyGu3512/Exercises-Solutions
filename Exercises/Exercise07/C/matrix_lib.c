@@ -18,6 +18,8 @@
 #include "matmul.h"
 #include <stdlib.h>
 
+#include <omp.h>
+
 //------------------------------------------------------------------------------
 //
 //  Function to compute the matrix product (sequential algorithm, dot prod)
@@ -29,6 +31,7 @@ void seq_mat_mul_sdot(int N, float *A, float *B, float *C)
     int i, j, k;
     float tmp;
 
+    #pragma omp parallel for collapse(2)
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++) {
             tmp = 0.0f;
@@ -46,7 +49,7 @@ void seq_mat_mul_sdot(int N, float *A, float *B, float *C)
 //  Function to initialize the input matrices A and B
 //
 //------------------------------------------------------------------------------
-void initmat(int N, float *A, float *B, float *C)
+void initmat_random(int N, float *A, float *B, float *C)
 {
     int i, j;
 
@@ -54,16 +57,48 @@ void initmat(int N, float *A, float *B, float *C)
 
 	for (i = 0; i < N; i++)
 		for (j = 0; j < N; j++)
-			// A[i*N+j] = AVAL;
-            A[i*N+j] = rand() / (float)RAND_MAX;
+            A[i*N+j] = 2.0f*(rand() / (float)RAND_MAX) - 1.0f;
 
 	for (i = 0; i < N; i++)
 		for (j = 0; j < N; j++)
-			// B[i*N+j] = BVAL;
-            B[i*N+j] = rand() / (float)RAND_MAX;
+            B[i*N+j] = 2.0f*(rand() / (float)RAND_MAX) - 1.0f;
 
 	for (i = 0; i < N; i++)
 		for (j = 0; j < N; j++)
+			C[i*N+j] = 0.0f;
+}
+void initmat_debugA(int N, float *A, float *B, float *C)
+{
+
+    /* Initialize matrices */
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+            A[i*N+j] = i*N+j;
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+            B[i*N+j] = (i==j)?1.0f:0.0f;
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+			C[i*N+j] = 0.0f;
+}
+void initmat_debugB(int N, float *A, float *B, float *C)
+{
+
+    /* Initialize matrices */
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+            A[i*N+j] = (i==j)?1.0f:0.0f;
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+            B[i*N+j] = i*N+j;
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
 			C[i*N+j] = 0.0f;
 }
 
