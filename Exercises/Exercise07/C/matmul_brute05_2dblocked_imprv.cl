@@ -18,16 +18,16 @@
 
 #define FETCH_MEM_B(li,lj,gi,gj,ss,si,sj,K,N,n,B,b) do{        \
     b[                                                         \
-        ((ss*n)*((ss)*(lj)+(sj)))                              \
-        +((ss)*(li)+(si))                                      \
+        ((ss*n)*((ss)*(li)+(si)))                              \
+        +((ss)*(lj)+(sj))                                      \
     ] =                                                        \
     (                                                          \
         (((ss)*(gj)+(sj)))                < (N) &&             \
         (((ss)*(n)*(K))+((ss)*(li)+(si))) < (N)                \
     ) ?                                                        \
     B[                                                         \
-        (((ss)*(n)*(K))+((ss)*(li)+(si)))                      \
-        +((N)*((ss)*(gj)+(sj)))                                \
+        ((N)*(((ss)*(n)*(K))+((ss)*(li)+(si))))                  \
+        +(((ss)*(gj)+(sj)))                                    \
     ] : 0.0f;                                                  \
     }while(0)
 
@@ -100,8 +100,8 @@ __kernel void mmul(
         FETCH_MEM_A(lid_i,lid_j,gid_i,gid_j,2,1,1,block,N,n,A,a_block);
         // B to local
         FETCH_MEM_B(lid_i,lid_j,gid_i,gid_j,2,0,0,block,N,n,B,b_block);
-        FETCH_MEM_B(lid_i,lid_j,gid_i,gid_j,2,1,0,block,N,n,B,b_block);
         FETCH_MEM_B(lid_i,lid_j,gid_i,gid_j,2,0,1,block,N,n,B,b_block);
+        FETCH_MEM_B(lid_i,lid_j,gid_i,gid_j,2,1,0,block,N,n,B,b_block);
         FETCH_MEM_B(lid_i,lid_j,gid_i,gid_j,2,1,1,block,N,n,B,b_block);
 
         // fence local mem writing

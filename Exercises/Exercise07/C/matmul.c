@@ -40,11 +40,11 @@
 #define KERNEL5A_LOCAL_WG 8
 #define KERNEL5B_LOCAL_WG 32
 
-#define ORDER 32
-#define MATMUL_CL_DEV 1
-#define INITMAT initmat_debugB
-#define PRINT 1
-#define PRINT_ALL 1
+#define ORDER 2050
+#define MATMUL_CL_DEV 0
+#define INITMAT initmat_random
+#define PRINT 0
+#define PRINT_ALL 0
 
 #define COUNT_HOST 1
 #define COUNT_DEVICE 1
@@ -98,12 +98,12 @@ const size_t kernels_global_ndrange[NUM_VER][2] = {
         GLOBAL_ROUND_UP(ORDER,KERNEL4B_LOCAL_WG)
     },
     {
-        GLOBAL_ROUND_UP(ORDER/2,KERNEL5A_LOCAL_WG),
-        GLOBAL_ROUND_UP(ORDER/2,KERNEL5A_LOCAL_WG)
+        GLOBAL_ROUND_UP((ORDER+1)/2,KERNEL5A_LOCAL_WG),
+        GLOBAL_ROUND_UP((ORDER+1)/2,KERNEL5A_LOCAL_WG)
     },
     {
-        GLOBAL_ROUND_UP(ORDER/2,KERNEL5B_LOCAL_WG),
-        GLOBAL_ROUND_UP(ORDER/2,KERNEL5B_LOCAL_WG)
+        GLOBAL_ROUND_UP((ORDER+1)/2,KERNEL5B_LOCAL_WG),
+        GLOBAL_ROUND_UP((ORDER+1)/2,KERNEL5B_LOCAL_WG)
     }
 };
 
