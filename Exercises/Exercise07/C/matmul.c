@@ -26,28 +26,37 @@
 #include "err_code.h"
 #include "device_picker.h"
 
+#include <unistd.h>
 
 
-#define NUM_VER 8
+
+#define NUM_VER 10
 #define GLOBAL_ROUND_UP(ng,nl) ((((ng)+(nl)-1)/(nl))*nl)
 
 #define KERNEL0_LOCAL_WG 1
 #define KERNEL1_LOCAL_WG 32
 #define KERNEL2_LOCAL_WG 32
 #define KERNEL3_LOCAL_WG 32
+
 #define KERNEL4A_LOCAL_WG 8
 #define KERNEL4B_LOCAL_WG 64
+
 #define KERNEL5A_LOCAL_WG 8
 #define KERNEL5B_LOCAL_WG 32
 
-#define ORDER 2050
+#define KERNEL5CD_TINY_SS 4
+#define KERNEL5C_LOCAL_WG 8
+#define KERNEL5D_LOCAL_WG 32
+
+
+#define ORDER 2051
 #define MATMUL_CL_DEV 0
 #define INITMAT initmat_random
 #define PRINT 0
 #define PRINT_ALL 0
 
 #define COUNT_HOST 1
-#define COUNT_DEVICE 1
+#define COUNT_DEVICE 20
 
 const char *joey_kernel_src_arr[NUM_VER] = {
     "./matmul_brute00_naive.cl",
@@ -57,7 +66,9 @@ const char *joey_kernel_src_arr[NUM_VER] = {
     "./matmul_brute04_2dblocked.cl",
     "./matmul_brute04_2dblocked.cl",
     "./matmul_brute05_2dblocked_imprv.cl",
-    "./matmul_brute05_2dblocked_imprv.cl"
+    "./matmul_brute05_2dblocked_imprv.cl",
+    "./matmul_brute05_2dblocked_imprv2.cl",
+    "./matmul_brute05_2dblocked_imprv2.cl"
 };
 
 const size_t kernels_local_ndrange[NUM_VER][2] = {
@@ -68,7 +79,9 @@ const size_t kernels_local_ndrange[NUM_VER][2] = {
     {KERNEL4A_LOCAL_WG,KERNEL4A_LOCAL_WG},
     {KERNEL4B_LOCAL_WG,KERNEL4B_LOCAL_WG},
     {KERNEL5A_LOCAL_WG,KERNEL5A_LOCAL_WG},
-    {KERNEL5B_LOCAL_WG,KERNEL5B_LOCAL_WG}
+    {KERNEL5B_LOCAL_WG,KERNEL5B_LOCAL_WG},
+    {KERNEL5C_LOCAL_WG,KERNEL5C_LOCAL_WG},
+    {KERNEL5D_LOCAL_WG,KERNEL5D_LOCAL_WG}
 };
 
 const size_t kernels_global_ndrange[NUM_VER][2] = {
@@ -98,12 +111,20 @@ const size_t kernels_global_ndrange[NUM_VER][2] = {
         GLOBAL_ROUND_UP(ORDER,KERNEL4B_LOCAL_WG)
     },
     {
-        GLOBAL_ROUND_UP((ORDER+1)/2,KERNEL5A_LOCAL_WG),
-        GLOBAL_ROUND_UP((ORDER+1)/2,KERNEL5A_LOCAL_WG)
+        GLOBAL_ROUND_UP((ORDER+2-1)/2,KERNEL5A_LOCAL_WG),
+        GLOBAL_ROUND_UP((ORDER+2-1)/2,KERNEL5A_LOCAL_WG)
     },
     {
-        GLOBAL_ROUND_UP((ORDER+1)/2,KERNEL5B_LOCAL_WG),
-        GLOBAL_ROUND_UP((ORDER+1)/2,KERNEL5B_LOCAL_WG)
+        GLOBAL_ROUND_UP((ORDER+2-1)/2,KERNEL5B_LOCAL_WG),
+        GLOBAL_ROUND_UP((ORDER+2-1)/2,KERNEL5B_LOCAL_WG)
+    },
+    {
+        GLOBAL_ROUND_UP((ORDER+KERNEL5CD_TINY_SS-1)/KERNEL5CD_TINY_SS,KERNEL5C_LOCAL_WG),
+        GLOBAL_ROUND_UP((ORDER+KERNEL5CD_TINY_SS-1)/KERNEL5CD_TINY_SS,KERNEL5C_LOCAL_WG)
+    },
+    {
+        GLOBAL_ROUND_UP((ORDER+KERNEL5CD_TINY_SS-1)/KERNEL5CD_TINY_SS,KERNEL5D_LOCAL_WG),
+        GLOBAL_ROUND_UP((ORDER+KERNEL5CD_TINY_SS-1)/KERNEL5CD_TINY_SS,KERNEL5D_LOCAL_WG)
     }
 };
 
@@ -361,6 +382,38 @@ int main(int argc, char *argv[]){
                 sizeof(int), &matmul_stride_width
             );
         }
+        if(kernel_version==8){
+            local_buf_size = KERNEL5CD_TINY_SS*KERNEL5CD_TINY_SS*KERNEL5C_LOCAL_WG*KERNEL5C_LOCAL_WG;
+            matmul_stride_width = KERNEL5C_LOCAL_WG;
+            err |= clSetKernelArg(
+                kernel, 4, 
+                local_buf_size*sizeof(cl_mem), NULL
+            );
+            err |= clSetKernelArg(
+                kernel, 5, 
+                local_buf_size*sizeof(cl_mem), NULL
+            );
+            err |= clSetKernelArg(
+                kernel, 6, 
+                sizeof(int), &matmul_stride_width
+            );
+        }
+        if(kernel_version==9){
+            local_buf_size = KERNEL5CD_TINY_SS*KERNEL5CD_TINY_SS*KERNEL5D_LOCAL_WG*KERNEL5D_LOCAL_WG;
+            matmul_stride_width = KERNEL5D_LOCAL_WG;
+            err |= clSetKernelArg(
+                kernel, 4, 
+                local_buf_size*sizeof(cl_mem), NULL
+            );
+            err |= clSetKernelArg(
+                kernel, 5, 
+                local_buf_size*sizeof(cl_mem), NULL
+            );
+            err |= clSetKernelArg(
+                kernel, 6, 
+                sizeof(int), &matmul_stride_width
+            );
+        }
         checkError(err, "Setting kernel arguments");
 
         start_time = wtime();
@@ -390,6 +443,8 @@ int main(int argc, char *argv[]){
         checkError(err, "Reading back buffer d_c");
 
         results(N, h_C, run_time);
+
+        // sleep(0.000010);
 
     } // end for loop
 

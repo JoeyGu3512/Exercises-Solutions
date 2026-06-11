@@ -30,26 +30,6 @@
     ] : 0.0f;                                                  \
     }while(0)
 
-
-#define FETCH_TINY_MATS_2(li,lj,gi,gj,ss,K,k,N,n,a,b,ta,tb) do{\
-    ta[0][0] = a[((ss*n)*((ss)*(li)+(0)))+((ss)*( k)+(0))];    \
-    ta[0][1] = a[((ss*n)*((ss)*(li)+(0)))+((ss)*( k)+(1))];    \
-    ta[1][0] = a[((ss*n)*((ss)*(li)+(1)))+((ss)*( k)+(0))];    \
-    ta[1][1] = a[((ss*n)*((ss)*(li)+(1)))+((ss)*( k)+(1))];    \
-    tb[0][0] = b[((ss*n)*((ss)*( k)+(0)))+((ss)*(lj)+(0))];    \
-    tb[0][1] = b[((ss*n)*((ss)*( k)+(0)))+((ss)*(lj)+(1))];    \
-    tb[1][0] = b[((ss*n)*((ss)*( k)+(1)))+((ss)*(lj)+(0))];    \
-    tb[1][1] = b[((ss*n)*((ss)*( k)+(1)))+((ss)*(lj)+(1))];    \
-    }while(0)
-
-
-#define TINY_MATMUL_2(ss,ta,tb,tc) do{                         \
-    tc[0][0] += ta[0][0]*tb[0][0]+ta[0][1]*tb[1][0];           \
-    tc[0][1] += ta[0][0]*tb[0][1]+ta[0][1]*tb[1][1];           \
-    tc[1][0] += ta[1][0]*tb[0][0]+ta[1][1]*tb[1][0];           \
-    tc[1][1] += ta[1][0]*tb[0][1]+ta[1][1]*tb[1][1];           \
-    }while(0)
-
 #define FETCH_BLOCK_MATS(li,lj,gi,gj,ss,K,N,n,A,B,a,b) do{     \
     __attribute__((opencl_unroll_hint)) for(int i=0;i<ss;i++){ \
     __attribute__((opencl_unroll_hint)) for(int j=0;j<ss;j++){ \
@@ -89,7 +69,7 @@
     }}                                                         \
     }while(0)
 
-#define SS 2
+#define SS 4
 
 __kernel void mmul(
    __global float* A,
@@ -117,8 +97,10 @@ __kernel void mmul(
     __private float tiny_a[SS][SS];
     __private float tiny_b[SS][SS];
     __private float dot_prod[SS][SS] = {
-        0.0f, 0.0f,
-        0.0f, 0.0f
+        0.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f
     };
 
     // slide over iblock
