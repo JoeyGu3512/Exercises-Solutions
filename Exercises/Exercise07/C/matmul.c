@@ -38,7 +38,7 @@
 #define KERNEL2_LOCAL_WG 32
 #define KERNEL3_LOCAL_WG 32
 
-#define KERNEL4A_LOCAL_WG 8
+#define KERNEL4A_LOCAL_WG 16
 #define KERNEL4B_LOCAL_WG 64
 
 #define KERNEL5A_LOCAL_WG 8
@@ -49,7 +49,7 @@
 #define KERNEL5D_LOCAL_WG 32
 
 
-#define ORDER 2051
+#define ORDER 4101
 #define MATMUL_CL_DEV 0
 #define INITMAT initmat_random
 #define PRINT 0

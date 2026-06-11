@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     initmat(N, h_A, h_B, h_C);
 
     printf("\n===== Sequential, matrix mult (dot prod), order %d on host CPU ======\n",ORDER);
-    for(int i = 0; i < COUNT; i++)
+    for(int i = 0; i < 0; i++)
     {
         zero_mat(N, h_C);
         start_time = wtime();
@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
     printf("\n===== OpenCL, matrix mult, C(i,j) per work item, order %d ======\n",N);
 
     // Do the multiplication COUNT times
-    for (int i = 0; i < COUNT; i++)
+    for (int i = 0; i < 0; i++)
     {
         zero_mat(N, h_C);
 
@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
     printf("\n===== OpenCL, matrix mult, C row per work item, order %d ======\n",N);
 
     // Do the multiplication COUNT times
-    for (int i = 0; i < COUNT; i++)
+    for (int i = 0; i < 0; i++)
     {
         zero_mat(N, h_C);
 
@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
     printf("\n===== OpenCL, matrix mult, C row, A row in priv mem, order %d ======\n",N);
 
     // Do the multiplication COUNT times
-    for (int i = 0; i < COUNT; i++)
+    for (int i = 0; i < 0; i++)
     {
         zero_mat(N, h_C);
 
@@ -311,7 +311,7 @@ int main(int argc, char *argv[])
         // Execute the kernel over the rows of the C matrix ... computing
         // a dot product for each element of the product matrix.
         const size_t global = N;
-        const size_t local = ORDER / 16;
+        const size_t local = 64;
         err = clEnqueueNDRangeKernel(
             commands,
             kernel,
@@ -364,7 +364,7 @@ int main(int argc, char *argv[])
     printf("\n===== OpenCL, mat mult, C row, priv A, B cols loc, order %d ======\n",N);
 
     // Do the multiplication COUNT times
-    for (int i = 0; i < COUNT; i++)
+    for (int i = 0; i < 0; i++)
     {
         zero_mat(N, h_C);
 
@@ -381,7 +381,7 @@ int main(int argc, char *argv[])
         // Execute the kernel over the rows of the C matrix ... computing
         // a dot product for each element of the product matrix.
         const size_t global = N;
-        const size_t local = ORDER / 16;
+        const size_t local = 64;
         err = clEnqueueNDRangeKernel(
             commands,
             kernel,

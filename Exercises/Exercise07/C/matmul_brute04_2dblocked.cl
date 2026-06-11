@@ -1,10 +1,10 @@
 __kernel void mmul(
-   __global float* A,
-   __global float* B,
-   __global float* C,
+   __global const float* restrict A,
+   __global const float* restrict B,
+   __global       float* restrict C,
    const int N,
-   __local float* a_block,
-   __local float* b_block,
+   __local        float* restrict a_block,
+   __local        float* restrict b_block,
    const int n
 ){
     
@@ -12,8 +12,10 @@ __kernel void mmul(
     // i-Arow,j-Bcol
     int gid_i = get_global_id(0);
     int gid_j = get_global_id(1);
-    int lsz_i = get_local_size(0);
-    int lsz_j = get_local_size(1);
+    int bsz_i = get_local_size(0);
+    int bsz_j = get_local_size(1);
+    int bid_i = get_group_id(0);
+    int bid_j = get_group_id(1);
     int lid_i = get_local_id(0);
     int lid_j = get_local_id(1);
     
@@ -28,13 +30,13 @@ __kernel void mmul(
 
         // ids
         __private int local_A_id = 
-            lid_i*n+lid_j;
+            lid_j*n+lid_i;
         __private int local_B_id = 
             lid_j*n+lid_i;
         __private int global_A_id =
-            (gid_i)*N+(n*block+lid_j);
+            (bid_i*bsz_i+lid_j)*N+(n*block+lid_i);
         __private int global_B_id =
-            (n*block+lid_i)*N+(gid_j);
+            (n*block+lid_j)*N+(bid_j*bsz_j+lid_i);
 
         // load to local buffer
         // if(gid_i<N && (n*block+lid_j)<N){
@@ -44,10 +46,10 @@ __kernel void mmul(
         //     b_block[local_B_id]=B[global_B_id];
         // }
         a_block[local_A_id] = 
-            (gid_i<N && (n*block+lid_j)<N) ?
+            ((bid_i*bsz_i+lid_j)<N && (n*block+lid_i)<N) ?
             A[global_A_id] : 0.0f;
         b_block[local_B_id]=
-            (gid_j<N && (n*block+lid_i)<N) ?
+            ((n*block+lid_j)<N && (bid_j*bsz_j+lid_i)<N) ?
             B[global_B_id] : 0.0f;
 
         // fence local mem writing
@@ -58,7 +60,7 @@ __kernel void mmul(
             for(int k=0;k<n;k++){
                 // if(n*block+k<N){
                     dot_prod += 
-                        a_block[lid_i*n+k]*b_block[lid_j*n+k];
+                        a_block[lid_i*n+k]*b_block[k*n+lid_j];
                 // }
             }
         }

@@ -30,7 +30,7 @@ endif
 
 all: $(EXEC)
 
-mult: $(MMUL_OBJS) matmul.c matrix_lib.c
+mult: $(MMUL_OBJS) matmul.c matrix_lib.c matmul.h matrix_lib.h
 	$(CC) $^ $(CCFLAGS) $(LIBS) -I $(COMMON_DIR) -o $(EXEC)
 
 wtime.o: $(COMMON_DIR)/wtime.c

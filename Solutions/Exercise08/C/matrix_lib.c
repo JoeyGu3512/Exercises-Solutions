@@ -16,6 +16,7 @@
 //------------------------------------------------------------------------------
 
 #include "matmul.h"
+#include "omp.h"
 
 //------------------------------------------------------------------------------
 //
@@ -25,13 +26,12 @@
 
 void seq_mat_mul_sdot(int N, float *A, float *B, float *C)
 {
-    int i, j, k;
-    float tmp;
 
-    for (i = 0; i < N; i++) {
-        for (j = 0; j < N; j++) {
-            tmp = 0.0f;
-            for (k = 0; k < N; k++) {
+    #pragma omp parallel for collapse(2)
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            float tmp = 0.0f;
+            for (int k = 0; k < N; k++) {
                 /* C(i,j) = sum(over k) A(i,k) * B(k,j) */
                 tmp += A[i*N+k] * B[k*N+j];
             }

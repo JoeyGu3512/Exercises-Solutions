@@ -1,4 +1,8 @@
 
+
+
+
+
 #define FETCH_MEM_A(li,lj,gi,gj,ss,si,sj,K,N,n,A,a) do{        \
     a[                                                         \
         ((ss*n)*((ss)*(li)+(si)))                              \
@@ -41,6 +45,10 @@
     }}                                                         \
     }while(0)
 
+
+
+
+
 #define FETCH_TINY_MATS(li,lj,gi,gj,ss,K,k,N,n,a,b,ta,tb) do{  \
     __attribute__((opencl_unroll_hint)) for(int i=0;i<ss;i++){ \
     __attribute__((opencl_unroll_hint)) for(int j=0;j<ss;j++){ \
@@ -69,7 +77,15 @@
     }}                                                         \
     }while(0)
 
+
+
+
+
 #define SS 4
+
+
+
+
 
 __kernel void mmul(
    __global float* A,
