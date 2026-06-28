@@ -49,7 +49,7 @@
 #define KERNEL5D_LOCAL_WG 32
 
 
-#define ORDER 4101
+#define ORDER 2051
 #define MATMUL_CL_DEV 0
 #define INITMAT initmat_random
 #define PRINT 0
