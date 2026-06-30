@@ -15,30 +15,82 @@ Parsing arguments to the matmul test executable!!
 // Include argp
 #include "argp.h"
 
+// Debug toggle
+#if 1
+#ifndef DEBUG_ARG_PARSE
+#define DEBUG_ARG_PARSE
+#endif
+#endif
+
 /**************************************************************/
 /******* Arg Parse I - Setting up argp ************************/
 /**************************************************************/
 
 // Set argp_options
 static struct argp_option options[] = {
+    /* Test Matrix Properties */
+    { 
+        .name = "???",
+        .key  = 500,
+        .arg  = 0,
+        .flags = 0,
+        .doc  = "???????"
+    },
+    { 
+        .name = "mati",
+        .key  = 501, 
+        .arg  = "size",
+        .flags = 0,
+        .doc  = "Matsize[I]: A-row AB-row"
+    },
+    { 
+        .name = "matj",
+        .key  = 502, 
+        .arg  = "size",
+        .flags = 0,
+        .doc  = "Matsize[J]: B-col AB-col"
+    },
+    { 
+        .name = "matk",
+        .key  = 503, 
+        .arg  = "size",
+        .flags = 0,
+        .doc  = "Matsize[K]: A-col B-row"
+    },
+    { 
+        .name = "initA",
+        .key  = 504, 
+        .arg  = "method",
+        .flags = 0,
+        .doc  = "Init MatA: \n" \
+            "    0-random 1-unit 2-fillrow 3-fillcol"
+    },
+    { 
+        .name = "initB",
+        .key  = 505, 
+        .arg  = "method",
+        .flags = 0,
+        .doc  = "Init MatB: \n" \
+            "    0-random 1-unit 2-fillrow 3-fillcol"
+    },
     /* OpenMP Options */
     { 
         .name = "omp",
-        .key  = 100, 
+        .key  = 200, 
         .arg  = 0,
         .flags = 0,
         .doc  = "Test the OpenMP Matmul"
     },
     { 
-        .name = "ompkernel",
-        .key  = 101, 
+        .name = "ompkern",
+        .key  = 201, 
         .arg  = "kernel_id",
         .flags = 0,
         .doc  = "Set OpenMP Kernel"
     },
     { 
         .name = "ompnthr",
-        .key  = 102, 
+        .key  = 202, 
         .arg  = "number",
         .flags = 0,
         .doc  = "Set OpenMP Kernel"
@@ -46,26 +98,42 @@ static struct argp_option options[] = {
     /* OpenCL Options */
     { 
         .name = "ocl",
-        .key  = 200, 
+        .key  = 300, 
         .arg  = 0,
         .flags = 0,
         .doc  = "Test the OpenCL Matmul"
     },
     { 
-        .name = "oclkernel",
-        .key  = 201,
+        .name = "oclkern",
+        .key  = 301,
         .arg  = "kernel_id",
         .flags = 0,
         .doc  = "Set OpenCL Kernel"
     },
     { 
         .name = "ocldev",
-        .key  = 202, 
+        .key  = 302, 
         .arg  = "device_id",
         .flags = 0,
         .doc  = "Set #0 OpenCL Device (Optional)"
     },
     { 0 }
+};
+
+// Default values of args
+static const struct arguments args_default = {
+    .surprise=0,
+    .mat_i=0,
+    .mat_j=0,
+    .mat_k=0,
+    .mat_Ainit=0,
+    .mat_Binit=0,
+    .test_omp=0,
+    .omp_kernel_id=-1,
+    .omp_thread_num=-1,
+    .test_ocl=0,
+    .ocl_kernel_id=-1,
+    .ocl_device_id=-1
 };
 
 // Parse
@@ -82,13 +150,84 @@ static error_t parse_opt(
     */
 
     switch (key) {
+        // Mat: ??? size-ijk initAB
+        case 500: {
+            args->surprise = 1;
+            break;
+        }
+        case 501: {
+            char* end = NULL;
+            long size = strtol(
+                arg, &end, 10
+            );
+            if(end!=arg){
+                if(size<1){size=1;}    // min: 1
+                args->mat_i=
+                    (int)(size);
+            }
+            break;
+        }
+        case 502: {
+            char* end = NULL;
+            long size = strtol(
+                arg, &end, 10
+            );
+            if(end!=arg){
+                if(size<1){size=1;}    // min: 1
+                args->mat_j=
+                    (int)(size);
+            }
+            break;
+        }
+        case 503: {
+            char* end = NULL;
+            long size = strtol(
+                arg, &end, 10
+            );
+            if(end!=arg){
+                if(size<1){size=1;}    // min: 1
+                args->mat_k=
+                    (int)(size);
+            }
+            break;
+        }
+        case 504: {
+            char* end = NULL;
+            long init_method = strtol(
+                arg, &end, 10
+            );
+            if(end!=arg){
+                if(init_method<0 || init_method>3){
+                    // if invalid, default to 0-random
+                    init_method=0;    
+                }
+                args->mat_Ainit=
+                    (int)(init_method);
+            }
+            break;
+        }
+        case 505: {
+            char* end = NULL;
+            long init_method = strtol(
+                arg, &end, 10
+            );
+            if(end!=arg){
+                if(init_method<0 || init_method>3){
+                    // if invalid, default to 0-random
+                    init_method=0;    
+                }
+                args->mat_Binit=
+                    (int)(init_method);
+            }
+            break;
+        }
         // Toggle OpenMP tests
-        case 100: {
+        case 200: {
             args->test_omp = 1;
             break;
         }
         // Kernel id
-        case 101: {
+        case 201: {
             char* end = NULL;
             long kernel_id = strtol(
                 arg, &end, 10
@@ -100,24 +239,25 @@ static error_t parse_opt(
             break;
         }
         // Number of omp threads
-        case 102: {
+        case 202: {
             char* end = NULL;
             long thread_num = strtol(
                 arg, &end, 10
             );
             if(end!=arg){
+                if(thread_num<1){thread_num=1;}    // min: 1
                 args->omp_thread_num=
                     (int)(thread_num);
             }
             break;
         }
         // Toggle OpenCL tests
-        case 200: {
+        case 300: {
             args->test_ocl = 1;
             break;
         }
         // Kernel id
-        case 201: {
+        case 301: {
             char* end = NULL;
             long kernel_id = strtol(
                 arg, &end, 10
@@ -129,7 +269,7 @@ static error_t parse_opt(
             break;
         }
         // OpenCL device id
-        case 202: {
+        case 302: {
             char* end = NULL;
             long device_id = strtol(
                 arg, &end, 10
@@ -164,31 +304,44 @@ error_t matmul_parse_args(
     struct arguments* args
 ){
 
-    // Init arguments
-    args->test_omp=0;
-    args->omp_kernel_id=-1;
-    args->omp_thread_num=-1;
-    args->test_ocl=0;
-    args->ocl_device_id=-1;
-    args->ocl_kernel_id=-1;
+    // Write defaults (See "args_default" far above)
+    *args = args_default;
 
     // Parse arguments with argp
     error_t argp_err = 
         argp_parse(&argp, argc, argv, 0, NULL, args);
     
     // Debug thingies
-    printf("[DEBUG] args.test_omp       = %d \n",
+#ifdef DEBUG_ARG_PARSE
+    printf("[DEBUG_ARG_PARSE] file:        %s \n",
+        __FILE__);
+    printf("[DEBUG_ARG_PARSE] compiled:    %s - %s \n",
+        __DATE__, __TIME__);
+    printf("[DEBUG_ARG_PARSE] args.surprise       = %d \n",
+        args->surprise);
+    printf("[DEBUG_ARG_PARSE] args.mat_i          = %d \n",
+        args->mat_i);
+    printf("[DEBUG_ARG_PARSE] args.mat_j          = %d \n",
+        args->mat_j);
+    printf("[DEBUG_ARG_PARSE] args.mat_j          = %d \n",
+        args->mat_k);
+    printf("[DEBUG_ARG_PARSE] args.mat_Ainit      = %d \n",
+        args->mat_Ainit);
+    printf("[DEBUG_ARG_PARSE] args.mat_Binit      = %d \n",
+        args->mat_Binit);
+    printf("[DEBUG_ARG_PARSE] args.test_omp       = %d \n",
         args->test_omp);
-    printf("[DEBUG] args.omp_kernel_id  = %d \n",
+    printf("[DEBUG_ARG_PARSE] args.omp_kernel_id  = %d \n",
         args->omp_kernel_id);
-    printf("[DEBUG] args.omp_thread_num = %d \n",
+    printf("[DEBUG_ARG_PARSE] args.omp_thread_num = %d \n",
         args->omp_thread_num);
-    printf("[DEBUG] args.test_ocl       = %d \n",
+    printf("[DEBUG_ARG_PARSE] args.test_ocl       = %d \n",
         args->test_ocl);
-    printf("[DEBUG] args.ocl_kernel_id  = %d \n",
+    printf("[DEBUG_ARG_PARSE] args.ocl_kernel_id  = %d \n",
         args->ocl_kernel_id);
-    printf("[DEBUG] args.ocl_device_id  = %d \n",
+    printf("[DEBUG_ARG_PARSE] args.ocl_device_id  = %d \n",
         args->ocl_device_id);
+#endif
 
     return argp_err;
 
