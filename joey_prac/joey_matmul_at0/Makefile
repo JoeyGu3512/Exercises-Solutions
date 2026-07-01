@@ -21,19 +21,25 @@ ifndef CL_VERSION
 endif
 
 # Set Default Device Const
-ifndef CL_DEFAULT_DEVICE
-	CL_DEFAULT_DEVICE=CL_DEVICE_TYPE_DEFAULT
+ifndef OCL_DEFAULT_DEVICE
+	OCL_DEFAULT_DEVICE=CL_DEVICE_TYPE_DEFAULT
 endif
 
 ################################################################
 
-# C compiler flags
+# C compiler flags - O0
 CC_FLAGS= -g -O0 -std=c99 
-CC_FLAGS+= -D CL_TARGET_OPENCL_VERSION=$(CL_VER) 
-CC_FLAGS+= -D DEVICE=$(DEVICE)
+CC_FLAGS+= -D OCL_TARGET_OPENCL_VERSION=$(CL_VERSION) 
+CC_FLAGS+= -D OCL_DEFAULT_DEVICE=$(OCL_DEFAULT_DEVICE)
+
+# C compiler flags - O3
+CC_FLAGS_O3= -g -O3 -std=c99 
+CC_FLAGS_O3+= -D OCL_TARGET_OPENCL_VERSION=$(CL_VERSION) 
+CC_FLAGS_O3+= -D OCL_DEFAULT_DEVICE=$(OCL_DEFAULT_DEVICE)
+
 
 # Libs to link
-LIBS= -lm -fopenmp -lOpenCL 
+LIBS= -lm -fopenmp -lOpenCL -lgsl -lcblas
 LIBS+= -L"./libs/argp/lib" -largp
 
 # Extra include for main
@@ -44,6 +50,8 @@ INCLUDE= -I"./libs/argp/include" -I"./include"
 # ohjects going into main
 OBJECTS_MAIN= main_matmul.o
 OBJECTS_MAIN+= matmul_pre.o
+OBJECTS_MAIN+= matmul_pre_kern0.o
+OBJECTS_MAIN+= matmul_pre_kern1.o
 OBJECTS_MAIN+= matmul_omp.o
 OBJECTS_MAIN+= matmul_ocl.o
 OBJECTS_MAIN+= matmul_utils.o
@@ -64,6 +72,10 @@ matmul_omp.o: ./src/matmul_omp.c
 	$(CC) -c $^ $(CC_FLAGS) $(INCLUDE) -o $@
 matmul_pre.o: ./src/matmul_pre.c
 	$(CC) -c $^ $(CC_FLAGS) $(INCLUDE) -o $@
+matmul_pre_kern0.o: ./src/matmul_pre_kern0.c
+	$(CC) -c $^ $(CC_FLAGS_O3) $(INCLUDE) -o $@
+matmul_pre_kern1.o: ./src/matmul_pre_kern1.c
+	$(CC) -c $^ $(CC_FLAGS_O3) $(INCLUDE) -o $@
 matmul_utils.o: ./src/matmul_utils.c
 	$(CC) -c $^ $(CC_FLAGS) $(INCLUDE) -o $@
 
@@ -74,6 +86,8 @@ clean:
 	rm -f ./matmul_ocl.o
 	rm -f ./matmul_omp.o
 	rm -f ./matmul_pre.o
+	rm -f ./matmul_pre_kern0.o
+	rm -f ./matmul_pre_kern1.o
 	rm -f ./matmul_utils.o
 
 ################################################################

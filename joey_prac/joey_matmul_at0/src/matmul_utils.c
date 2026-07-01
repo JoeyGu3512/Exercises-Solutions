@@ -10,6 +10,7 @@ Parsing arguments to the matmul test executable!!
 
 // Include stdio
 #include <stdio.h>
+// Inclide stdlib
 #include <stdlib.h>
 
 // Include argp
@@ -17,8 +18,8 @@ Parsing arguments to the matmul test executable!!
 
 // Debug toggle
 #if 1
-#ifndef DEBUG_ARG_PARSE
-#define DEBUG_ARG_PARSE
+#ifndef DEBUG_MATMUL_PREPARE
+#define DEBUG_MATMUL_PREPARE
 #endif
 #endif
 
@@ -313,6 +314,8 @@ error_t matmul_parse_args(
     
     // Debug thingies
 #ifdef DEBUG_ARG_PARSE
+    printf("\n");
+    printf("[DEBUG_ARG_PARSE] Debugging argument parsing~ \n");
     printf("[DEBUG_ARG_PARSE] file:        %s \n",
         __FILE__);
     printf("[DEBUG_ARG_PARSE] compiled:    %s - %s \n",
@@ -341,6 +344,7 @@ error_t matmul_parse_args(
         args->ocl_kernel_id);
     printf("[DEBUG_ARG_PARSE] args.ocl_device_id  = %d \n",
         args->ocl_device_id);
+    printf("\n");
 #endif
 
     return argp_err;

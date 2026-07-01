@@ -10,26 +10,27 @@ JoeyGu3412QwQ
 #include <stdio.h>
 #include <stdlib.h>
 
-// Include DS's timing macro header
-#include "timing.h"
-
 // Include utils header
-#include "matmul_utils.h"
-
-// Include omp ref impl of matmul
-#include "matmul_omp_ref.h"
-// Include omp impl
-#include "matmul_omp.h"
-// Include ocl impl
-#include "matmul_ocl.h"
+#include "main_matmul.h"
 
 /**************************************************************/
 
 int main(int argc, char** argv){
 
-    // Parse args
+    /******************************************************/
+    /******* [0] Parse Argument ***************************/
+    /******************************************************/
+
     struct arguments args;
     matmul_parse_args(argc,argv,&args);
+
+    /******************************************************/
+    /******* [1] Prepare Matrices *************************/
+    /******************************************************/
+
+    
+
+    /******************************************************/
 
     return 0;
     

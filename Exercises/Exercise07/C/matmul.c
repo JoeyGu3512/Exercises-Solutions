@@ -56,7 +56,7 @@
 #define PRINT_ALL 0
 
 #define COUNT_HOST 1
-#define COUNT_DEVICE 20
+#define COUNT_DEVICE 100
 
 const char *joey_kernel_src_arr[NUM_VER] = {
     "./matmul_brute00_naive.cl",
