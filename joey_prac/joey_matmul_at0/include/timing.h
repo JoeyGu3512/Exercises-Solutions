@@ -1,3 +1,5 @@
+#ifndef TIMING_H
+#define TIMING_H
 /*
 DeepSeek做的计时器宏（给都给了就用吧QwQ）
 谢谢DeepSeek！XwX
@@ -19,3 +21,5 @@ DeepSeek做的计时器宏（给都给了就用吧QwQ）
 } while(0)
 
 /**************************************************************/
+
+#endif

@@ -12,16 +12,27 @@ Parsing arguments to the matmul test executable!!
 #include <time.h>
 
 // Include Lapack
-#include <cblas.h>
+#include <openblas/cblas.h>
+
+#include <openblas/openblas_config.h>
 
 /**************************************************************/
 
 int matmul_ref_matmul(
-    float* matA_buf, float* matB_buf, float* matC_buf, 
-    int mat_i, int mat_j, int mat_k
+    float* restrict matA_buf, 
+    float* restrict matB_buf, 
+    float* restrict matC_buf, 
+    int mat_i, int mat_j, int mat_k,
+    const float alpha,
+    const float beta
 ){
 
-    /* Old good CPU impl of matmul by blas|lapack in fortran*/
+    // openblas set num threads
+    openblas_set_num_threads(openblas_get_num_threads());
+
+    /* 
+    Old good CPU impl of matmul by OpenBLAS!!!
+    */
     cblas_sgemm(
         CblasRowMajor, CblasNoTrans, CblasNoTrans,
         mat_i, mat_j, mat_k, 

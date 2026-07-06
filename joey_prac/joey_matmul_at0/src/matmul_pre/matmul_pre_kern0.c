@@ -22,7 +22,9 @@ Parsing arguments to the matmul test executable!!
 
 /**************************************************************/
 
-int mat_init0_random(float* mat_buf, int row, int col){
+int mat_init0_random(
+    float* restrict mat_buf, int row, int col
+){
 
     // check
     if(mat_buf==NULL){
@@ -93,7 +95,9 @@ int mat_init0_random(float* mat_buf, int row, int col){
 
 /**************************************************************/
 
-int mat_init1_unit(float* mat_buf, int row, int col){
+int mat_init1_unit(
+    float* restrict mat_buf, int row, int col
+){
 
     // check
     if(mat_buf==NULL){
@@ -107,7 +111,7 @@ int mat_init1_unit(float* mat_buf, int row, int col){
             "Function {mat_init1_unit}, " \
             "line %d of file \"%s\", " \
             "is called upon a matrix buffer, "\
-            "yet the matrix size(%d,%d) is not square!",
+            "yet the matrix size(%d,%d) is not square! \n",
             __LINE__, __FILE__, row, col
         );
     }
@@ -138,7 +142,9 @@ int mat_init1_unit(float* mat_buf, int row, int col){
 
 /**************************************************************/
 
-int mat_init2_fillrow(float* mat_buf, int row, int col){
+int mat_init2_fillrow(
+    float* restrict mat_buf, int row, int col
+){
 
     // check
     if(mat_buf==NULL){
@@ -171,7 +177,9 @@ int mat_init2_fillrow(float* mat_buf, int row, int col){
 
 /**************************************************************/
 
-int mat_init3_fillcol(float* mat_buf, int row, int col){
+int mat_init3_fillcol(
+    float* restrict mat_buf, int row, int col
+){
 
     // check
     if(mat_buf==NULL){

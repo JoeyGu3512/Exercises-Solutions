@@ -14,12 +14,12 @@ Parsing arguments to the matmul test executable!!
 
 // Allocation
 int matmul_alloc(
-    struct matmul_testing_t *matmul_test,
+    struct matmul_testing_t **matmul_test,
     int mat_i, int mat_j, int mat_k
 );
 // Free
 int matmul_free(
-    struct matmul_testing_t *matmul_test
+    struct matmul_testing_t **matmul_test
 );
 // Initialisation
 int matmul_init(

@@ -124,9 +124,9 @@ static struct argp_option options[] = {
 // Default values of args
 static const struct arguments args_default = {
     .surprise=0,
-    .mat_i=0,
-    .mat_j=0,
-    .mat_k=0,
+    .mat_i=1,
+    .mat_j=1,
+    .mat_k=1,
     .mat_Ainit=0,
     .mat_Binit=0,
     .test_omp=0,

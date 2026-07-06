@@ -14,9 +14,6 @@ Parsing arguments to the matmul test executable!!
 // Include stdlib
 #include <stdlib.h>
 
-// Define OpenMP shedule slide size
-#define OMP_SCHEDULE_SIZE 128
-
 // Debug toggle
 #if 1
 #ifndef DEBUG_MATMUL_PREPARE
@@ -30,14 +27,37 @@ Parsing arguments to the matmul test executable!!
 
 // Allocation
 int matmul_alloc(
-    struct matmul_testing_t *matmul_test,
+    struct matmul_testing_t **matmul_test_ptr,
     int mat_i, int mat_j, int mat_k
 ){
 
-    // check
-    if(matmul_test==NULL){
+    // check ptr
+    if(matmul_test_ptr==NULL){
         return 1;
     }
+
+    // check existence first
+    if(*matmul_test_ptr!=NULL){
+        printf(
+            "[Error] The matmul test is already created. " \
+            "Free it first to recreate! \n"
+        );
+        return 2;
+    }
+
+    // alloc struct!
+    struct matmul_testing_t* matmul_test = 
+        (struct matmul_testing_t*)(
+            malloc(sizeof(struct matmul_testing_t))
+        );
+    if(matmul_test==NULL){
+        printf(
+            "[Error] Failed to allocate memory for the " \
+            "matmul testing struct!!! \n"
+        );
+    }
+    // store the ptr
+    *matmul_test_ptr = matmul_test;
 
     // save sizes
     matmul_test->mat_i = mat_i;
@@ -61,9 +81,9 @@ int matmul_alloc(
         printf(
             "[ERROR] Failed to allocate " \
             "%d Bytes for {host_buffer_A}! \n",
-            matA_size*sizeof(float)
+            (int)(matA_size*sizeof(float))
         );
-        return 2;
+        return 3;
     }
 
     host_buffer_B = malloc(matB_size*sizeof(float));
@@ -71,10 +91,10 @@ int matmul_alloc(
         printf(
             "[ERROR] Failed to allocate " \
             "%d Bytes for {host_buffer_B}! \n",
-            matB_size*sizeof(float)
+            (int)(matB_size*sizeof(float))
         );
         free(host_buffer_A); host_buffer_A=NULL;
-        return 2;
+        return 3;
     }
     
     host_buffer_ABres = malloc(matAB_size*sizeof(float));
@@ -82,11 +102,11 @@ int matmul_alloc(
         printf(
             "[ERROR] Failed to allocate " \
             "%d Bytes for {host_buffer_ABresult}! \n",
-            matAB_size*sizeof(float)
+            (int)(matAB_size*sizeof(float))
         );
         free(host_buffer_A); host_buffer_A=NULL;
         free(host_buffer_B); host_buffer_B=NULL;
-        return 2;
+        return 3;
     }
     
     host_buffer_ABref = malloc(matAB_size*sizeof(float));
@@ -94,12 +114,12 @@ int matmul_alloc(
         printf(
             "[ERROR] Failed to allocate " \
             "%d Bytes for {host_buffer_ABreference}! \n",
-            matAB_size*sizeof(float)
+            (int)(matAB_size*sizeof(float))
         );
         free(host_buffer_A); host_buffer_A=NULL;
         free(host_buffer_B); host_buffer_B=NULL;
         free(host_buffer_ABres); host_buffer_ABres=NULL;
-        return 2;
+        return 3;
     }
 
     // Give the buffers to the struct
@@ -115,12 +135,25 @@ int matmul_alloc(
 
 // Free
 int matmul_free(
-    struct matmul_testing_t *matmul_test
+    struct matmul_testing_t **matmul_test_ptr
 ){
+
+    // check ptr
+    if(matmul_test_ptr==NULL){
+        return 1;
+    }
+    
+    // store the pointer for now
+    struct matmul_testing_t* matmul_test = 
+        *matmul_test_ptr;
 
     // check
     if(matmul_test==NULL){
-        return 1;
+        printf(
+            "[Error] The matmul test is non-existent. " \
+            "Nothing to free! \n"
+        );
+        return 2;
     }
     
     // free and set NULL
@@ -132,7 +165,7 @@ int matmul_free(
             "Function {matmul_free}, " \
             "line %d of file \"%s\", " \
             "is called upon a {matmul_testing_t} "\
-            "without a {%s} buffer!",
+            "without a {%s} buffer! \n",
             __LINE__, __FILE__, "matrixA" 
         );
     }
@@ -144,7 +177,7 @@ int matmul_free(
             "Function {matmul_free}, " \
             "line %d of file \"%s\", " \
             "is called upon a {matmul_testing_t} "\
-            "without a {%s} buffer!",
+            "without a {%s} buffer! \n",
             __LINE__, __FILE__, "matrixB" 
         );
     }
@@ -156,7 +189,7 @@ int matmul_free(
             "Function {matmul_free}, " \
             "line %d of file \"%s\", " \
             "is called upon a {matmul_testing_t} "\
-            "without a {%s} buffer!",
+            "without a {%s} buffer! \n",
             __LINE__, __FILE__, "matrixABres" 
         );
     }
@@ -168,7 +201,7 @@ int matmul_free(
             "Function {matmul_free}, " \
             "line %d of file \"%s\", " \
             "is called upon a {matmul_testing_t} "\
-            "without a {%s} buffer!",
+            "without a {%s} buffer! \n",
             __LINE__, __FILE__, "matrixABref" 
         );
     }
@@ -182,6 +215,11 @@ int matmul_free(
     matmul_test->matAB_res = NULL;
     matmul_test->matAB_ref = NULL;
 
+    // free the matmul testing struct itself
+    free(*matmul_test_ptr);
+    *matmul_test_ptr = NULL;
+
+
     // return 0 if successful
     return 0;
 
@@ -192,10 +230,18 @@ int matmul_free(
 /**************************************************************/
 
 /* Methods of Init */
-extern int mat_init0_random(float* mat_buf, int row, int col);
-extern int mat_init1_unit(float* mat_buf, int row, int col);
-extern int mat_init2_fillrow(float* mat_buf, int row, int col);
-extern int mat_init3_fillcol(float* mat_buf, int row, int col);
+extern int mat_init0_random(
+    float* restrict mat_buf, int row, int col
+);
+extern int mat_init1_unit(
+    float* restrict mat_buf, int row, int col
+);
+extern int mat_init2_fillrow(
+    float* restrict mat_buf, int row, int col
+);
+extern int mat_init3_fillcol(
+    float* restrict mat_buf, int row, int col
+);
 
 /**************************************************************/
 
@@ -228,12 +274,90 @@ int matmul_init(
             "Function {matmul_init}, " \
             "line %d of file \"%s\", " \
             "is called upon a {matmul_testing_t}"\
-            "that is not properly created!",
+            "that is not properly created! \n",
             __LINE__, __FILE__
         );
         return 2;
     }
 
+    /* Init MatA */
+    int init_code_a = 0;
+    switch(init_a){
+        case 0:
+            init_code_a = mat_init0_random(
+                matmul_test->matA,
+                matmul_test->mat_i, matmul_test->mat_k
+            );
+            break;
+        case 1:
+            init_code_a = mat_init1_unit(
+                matmul_test->matA,
+                matmul_test->mat_i, matmul_test->mat_k
+            );
+            break;
+        case 2:
+            init_code_a = mat_init2_fillrow(
+                matmul_test->matA,
+                matmul_test->mat_i, matmul_test->mat_k
+            );
+            break;
+        case 3:
+            init_code_a = mat_init3_fillcol(
+                matmul_test->matA,
+                matmul_test->mat_i, matmul_test->mat_k
+            );
+            break;
+        default:
+            init_code_a = mat_init0_random(
+                matmul_test->matA,
+                matmul_test->mat_i, matmul_test->mat_k
+            );
+            break;
+            
+    }
+
+    /* Init MatB */
+    int init_code_b = 0;
+    switch(init_b){
+        case 0:
+            init_code_b = mat_init0_random(
+                matmul_test->matB,
+                matmul_test->mat_k, matmul_test->mat_j
+            );
+            break;
+        case 1:
+            init_code_b = mat_init1_unit(
+                matmul_test->matB,
+                matmul_test->mat_k, matmul_test->mat_j
+            );
+            break;
+        case 2:
+            init_code_b = mat_init2_fillrow(
+                matmul_test->matB,
+                matmul_test->mat_k, matmul_test->mat_j
+            );
+            break;
+        case 3:
+            init_code_b = mat_init3_fillcol(
+                matmul_test->matB,
+                matmul_test->mat_k, matmul_test->mat_j
+            );
+            break;
+        default:
+            init_code_b = mat_init0_random(
+                matmul_test->matB,
+                matmul_test->mat_k, matmul_test->mat_j
+            );
+            break;
+    }
+
+
+    // return
+    int return_code = 0;
+    if(init_code_a!=0){ return_code += (int)(1)<<0; }
+    if(init_code_b!=0){ return_code += (int)(1)<<1; }
+
+    return 0;
     
 }
 
@@ -243,8 +367,12 @@ int matmul_init(
 
 /* Find reference result of matmul */
 extern int matmul_ref_matmul(
-    float* matA_buf, float* matB_buf, float* matC_buf, 
-    int mat_i, int mat_j, int mat_k
+    float* restrict matA_buf, 
+    float* restrict matB_buf, 
+    float* restrict matC_buf, 
+    int mat_i, int mat_j, int mat_k,
+    const float alpha,
+    const float beta
 );
 
 /**************************************************************/
@@ -259,7 +387,20 @@ int matmul_ref_result(
         return 1;
     }
 
-    //
+    // find ref result!!
+    int ret_val = 
+        matmul_ref_matmul(
+            matmul_test->matA,
+            matmul_test->matB,
+            matmul_test->matAB_ref,
+            matmul_test->mat_i,
+            matmul_test->mat_j,
+            matmul_test->mat_k,
+            1.0f, 0.0f
+        );
+    if(ret_val!=0){
+        return 2;
+    }
 
 
     return 0;
